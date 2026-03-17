@@ -12,7 +12,7 @@ def decode(z, edge_label_index):
 
 
 class GCNLinkPredictor(torch.nn.Module):
-    def __init__(self, in_channels, hidden_channels, num_layers=2, dropout=0.5):
+    def __init__(self, in_channels, hidden_channels, num_layers=3, dropout=0.5):
         super().__init__()
         self.layers = torch.nn.ModuleList()
         self.layers.append(GCNConv(in_channels, hidden_channels))
@@ -29,7 +29,7 @@ class GCNLinkPredictor(torch.nn.Module):
         return self.layers[-1](x, edge_index)
 
 
-model = GCNLinkPredictor(in_channels=5, hidden_channels=256)
+model = GCNLinkPredictor(in_channels=5, hidden_channels=256, num_layers=3)
 optimizer = optim.Adam(model.parameters(), lr=0.01)
 
 

@@ -11,8 +11,8 @@ from gan import *
 
 def run_gan_bo(train_data, test_data, n_init=5, n_iter=15):
     search_space = {
-        "hidden_channels": list(range(32, 257, 16)),
-        "lr": np.logspace(-4, -1, 20),
+        "hidden_channels": list(range(64, 513, 32)),
+        "lr": np.logspace(-5, -1, 20),
         "dropout": np.linspace(0.0, 0.7, 15),
     }
 
@@ -331,8 +331,8 @@ def run_gan_aco(train_data, test_data, n_ants=5, n_gen=5, alpha=1, beta=2, evap=
 def run_gan_gs(train_data, test_data):
     param_grid = {
         "hidden_channels": [64, 128, 256, 512],
-        "lr": [0.0001, 0.00001],
-        "dropout": [0.0, 0.3, 0.5]
+        "lr": [0.1, 0.01, 0.001, 0.0001, 0.00001],
+        "dropout": [0.0, 0.3, 0.5, 0.7]
     }
 
     keys = list(param_grid.keys())

@@ -146,7 +146,7 @@ def run_gcn_optuna(train_data, test_data, n_trials=30):
 
 def run_gcn_aco(train_data, test_data, n_ants=5, n_gen=5, alpha=1, beta=2, evap=0.5):
     search_space = {
-        "hidden_channels": list(range(32, 256, 32)),
+        "hidden_channels": list(range(32, 257, 32)),
         "lr": np.logspace(-4, -1, 10).tolist(),
         "num_layers": [2, 3, 4],
         "dropout": np.round(np.linspace(0.0, 0.7, 8), 2).tolist()
@@ -315,9 +315,9 @@ def run_gcn_aco(train_data, test_data, n_ants=5, n_gen=5, alpha=1, beta=2, evap=
 def run_gcn_gs(train_data, test_data):
     param_grid = {
         "hidden_channels": [64, 128, 256],
-        "lr": [0.01, 0.001],
-        "num_layers": [2, 3],
-        "dropout": [0.0, 0.3, 0.5]
+        "lr": [0.01, 0.001, 0.0001],
+        "num_layers": [2, 3, 4],
+        "dropout": [0.0, 0.3, 0.5, 0.7]
     }
 
     keys = list(param_grid.keys())
