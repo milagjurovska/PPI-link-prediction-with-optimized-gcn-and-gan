@@ -2,6 +2,8 @@ import threading
 from queue import Queue
 from itertools import product
 import random
+import numpy as np
+import time
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Matern
 import optuna
@@ -10,10 +12,13 @@ from gan import *
 
 
 def run_gan_bo(train_data, test_data, n_init=5, n_iter=15):
+    start_time = time.time()
     search_space = {
         "hidden_channels": list(range(64, 513, 32)),
         "lr": np.logspace(-5, -1, 20),
-        "dropout": np.linspace(0.0, 0.7, 15),
+        "dropout": np.linspace(0.0, 0.8, 15),
+        "weight_decay": np.logspace(-7, -2, 10),
+        "beta1": np.linspace(0.3, 0.9, 7),
     }
 
     keys = list(search_space.keys())
@@ -29,6 +34,8 @@ def run_gan_bo(train_data, test_data, n_init=5, n_iter=15):
         hidden_channels = int(params["hidden_channels"])
         lr = float(params["lr"])
         dropout = float(params["dropout"])
+        weight_decay = float(params["weight_decay"])
+        beta1 = float(params["beta1"])
 
         generator = Generator(in_channels=5, hidden_channels=hidden_channels).to(device)
         discriminator = Discriminator(hidden_channels=hidden_channels).to(device)
@@ -38,8 +45,8 @@ def run_gan_bo(train_data, test_data, n_init=5, n_iter=15):
         generator.apply(init_weights)
         discriminator.apply(init_weights)
 
-        optimizer_G = torch.optim.Adam(generator.parameters(), lr=lr, betas=(0.5, 0.999))
-        optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
+        optimizer_G = torch.optim.Adam(generator.parameters(), lr=lr, betas=(beta1, 0.999), weight_decay=weight_decay)
+        optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=lr, betas=(beta1, 0.999), weight_decay=weight_decay)
 
         total_d_loss, total_g_loss = 0, 0
         for _ in range(10):
@@ -89,23 +96,29 @@ def run_gan_bo(train_data, test_data, n_init=5, n_iter=15):
     best_params = idxs_to_params(best_indices)
     best_f1, best_auc, best_loss, best_ndcg = evaluate_params(best_params)
 
+    duration = time.time() - start_time
     return {
         "best_params": {
             "hidden_channels": int(best_params["hidden_channels"]),
             "lr": best_params["lr"],
             "dropout": best_params["dropout"],
+            "weight_decay": best_params["weight_decay"],
+            "beta1": best_params["beta1"],
         },
         'f1': best_f1,
         'auc': best_auc,
         'loss': best_loss,
-        "ndcg": best_ndcg
+        "ndcg": best_ndcg,
+        "time_taken": duration
     }
 
 
 def objective_gan(trial, train_data, test_data):
     hidden_channels = trial.suggest_int("hidden_channels", 64, 512)
     lr = trial.suggest_loguniform("lr", 1e-5, 0.1)
-    dropout = trial.suggest_uniform("dropout", 0.0, 0.7)
+    dropout = trial.suggest_uniform("dropout", 0.0, 0.8)
+    weight_decay = trial.suggest_loguniform("weight_decay", 1e-7, 1e-2)
+    beta1 = trial.suggest_uniform("beta1", 0.3, 0.9)
 
     generator = Generator(in_channels=5, hidden_channels=hidden_channels).to(device)
     discriminator = Discriminator(hidden_channels=hidden_channels).to(device)
@@ -115,8 +128,8 @@ def objective_gan(trial, train_data, test_data):
     generator.apply(init_weights)
     discriminator.apply(init_weights)
 
-    optimizer_G = torch.optim.Adam(generator.parameters(), lr=lr, betas=(0.5, 0.999))
-    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
+    optimizer_G = torch.optim.Adam(generator.parameters(), lr=lr, betas=(beta1, 0.999), weight_decay=weight_decay)
+    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=lr, betas=(beta1, 0.999), weight_decay=weight_decay)
 
     total_d_loss = 0
     total_g_loss = 0
@@ -135,31 +148,33 @@ def objective_gan(trial, train_data, test_data):
     trial.set_user_attr("loss", avg_loss)
     trial.set_user_attr("ndcg", ndcg)
 
-    return -f1
+    return f1
 
 def run_gan_optuna(train_data, test_data, n_trials=30):
-    study = optuna.create_study(direction="minimize")
+    start_time = time.time()
+    study = optuna.create_study(direction="maximize")
     study.optimize(lambda trial: objective_gan(trial, train_data, test_data), n_trials=n_trials)
     best_trial = study.best_trial
 
+    duration = time.time() - start_time
     return {
-        "best_params": {
-            "hidden_channels": int(best_trial.params["hidden_channels"]),
-            "lr": best_trial.params["lr"],
-            "dropout": best_trial.params["dropout"]
-        },
+        "best_params": best_trial.params,
         "f1": best_trial.user_attrs["f1"],
         "auc": best_trial.user_attrs["auc"],
         "loss": best_trial.user_attrs["loss"],
-        "ndcg": best_trial.user_attrs["ndcg"]
+        "ndcg": best_trial.user_attrs["ndcg"],
+        "time_taken": duration
     }
 
 
 def run_gan_aco(train_data, test_data, n_ants=5, n_gen=5, alpha=1, beta=2, evap=0.5):
+    start_time = time.time()
     search_space = {
         "hidden_channels": list(range(64, 513, 64)),
         "lr": np.logspace(-5, -1, 10).tolist(),
-        "dropout": np.round(np.linspace(0.0, 0.7, 8), 2).tolist()
+        "dropout": np.round(np.linspace(0.0, 0.8, 8), 2).tolist(),
+        "weight_decay": np.round(np.logspace(-7, -2, 8), 8).tolist(),
+        "beta1": np.round(np.linspace(0.3, 0.9, 5), 2).tolist()
     }
 
     keys = list(search_space.keys())
@@ -199,8 +214,8 @@ def run_gan_aco(train_data, test_data, n_ants=5, n_gen=5, alpha=1, beta=2, evap=
 
                 generator.dropout = torch.nn.Dropout(params["dropout"])
 
-                optimizer_G = torch.optim.Adam(generator.parameters(), lr=params["lr"], betas=(0.5, 0.999))
-                optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=params["lr"], betas=(0.5, 0.999))
+                optimizer_G = torch.optim.Adam(generator.parameters(), lr=params["lr"], betas=(params["beta1"], 0.999), weight_decay=params["weight_decay"])
+                optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=params["lr"], betas=(params["beta1"], 0.999), weight_decay=params["weight_decay"])
 
                 total_d_loss = 0
                 total_g_loss = 0
@@ -239,16 +254,20 @@ def run_gan_aco(train_data, test_data, n_ants=5, n_gen=5, alpha=1, beta=2, evap=
 
     best_params = {keys[i]: values[i][best_idx[i]] for i in range(n_params)}
 
+    duration = time.time() - start_time
     return {
         "best_params": {
             "hidden_channels": int(best_params["hidden_channels"]),
             "lr": best_params["lr"],
-            "dropout": best_params["dropout"]
+            "dropout": best_params["dropout"],
+            "weight_decay": best_params["weight_decay"],
+            "beta1": best_params["beta1"]
         },
         "f1": best_score,
         "auc": best_auc,
         "loss": best_loss,
-        "ndcg": best_ndcg
+        "ndcg": best_ndcg,
+        "time_taken": duration
     }
 
 
@@ -329,10 +348,13 @@ def run_gan_aco(train_data, test_data, n_ants=5, n_gen=5, alpha=1, beta=2, evap=
 
 
 def run_gan_gs(train_data, test_data):
+    start_time = time.time()
     param_grid = {
         "hidden_channels": [64, 128, 256, 512],
-        "lr": [0.1, 0.01, 0.001, 0.0001, 0.00001],
-        "dropout": [0.0, 0.3, 0.5, 0.7]
+        "lr": [0.01, 0.001, 0.0001],
+        "dropout": [0.0, 0.3, 0.5, 0.7],
+        "weight_decay": [1e-5, 1e-4, 1e-3],
+        "beta1": [0.5, 0.7, 0.9]
     }
 
     keys = list(param_grid.keys())
@@ -343,6 +365,7 @@ def run_gan_gs(train_data, test_data):
     best_params = None
     best_auc = None
     best_loss = None
+    best_ndcg = None
 
     for combination in grid:
         params = dict(zip(keys, combination))
@@ -356,8 +379,8 @@ def run_gan_gs(train_data, test_data):
             generator.apply(init_weights)
             discriminator.apply(init_weights)
 
-            optimizer_G = torch.optim.Adam(generator.parameters(), lr=params["lr"], betas=(0.5, 0.999))
-            optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=params["lr"], betas=(0.5, 0.999))
+            optimizer_G = torch.optim.Adam(generator.parameters(), lr=params["lr"], betas=(params["beta1"], 0.999), weight_decay=params["weight_decay"])
+            optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=params["lr"], betas=(params["beta1"], 0.999), weight_decay=params["weight_decay"])
 
             total_d_loss = 0
             total_g_loss = 0
@@ -381,14 +404,18 @@ def run_gan_gs(train_data, test_data):
         except Exception as e:
             continue
 
+    duration = time.time() - start_time
     return {
         "best_params": {
             "hidden_channels": int(best_params["hidden_channels"]),
             "lr": best_params["lr"],
-            "dropout": best_params["dropout"]
+            "dropout": best_params["dropout"],
+            "weight_decay": best_params["weight_decay"],
+            "beta1": best_params["beta1"]
         },
-        "f1": best_score,
-        "auc": best_auc,
-        "loss": best_loss,
-        "ndcg": best_ndcg
+        "f1": float(best_score),
+        "auc": float(best_auc),
+        "loss": float(best_loss),
+        "ndcg": float(best_ndcg),
+        "time_taken": duration
     }

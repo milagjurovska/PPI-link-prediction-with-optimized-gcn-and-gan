@@ -6,14 +6,22 @@ from gcn import *
 from gan import *
 from data_processing import train_data, test_data
 from niapy.algorithms.algorithm import Individual
+import time
 
+
+# Search space dimensions:
+#   x[0] = hidden_channels  in [64,   512]
+#   x[1] = lr               in [1e-5, 0.1]
+#   x[2] = dropout          in [0.0,  0.8]
+#   x[3] = weight_decay     in [1e-7, 1e-2]
+#   x[4] = beta1            in [0.3,  0.9]
 
 class GANHyperparameterProblem(Problem):
     def __init__(self):
         super().__init__(
-            dimension=3,
-            lower=[64, 0.00005, 0.1],
-            upper=[512, 0.002, 0.4],
+            dimension=5,
+            lower=[64, 1e-5, 0.0, 1e-7, 0.3],
+            upper=[512, 0.1, 0.8, 1e-2, 0.9],
             dtype=float
         )
         self.last_f1 = None
@@ -25,6 +33,8 @@ class GANHyperparameterProblem(Problem):
         hidden_channels = int(x[0])
         lr = float(x[1])
         dropout = float(x[2])
+        weight_decay = float(x[3])
+        beta1 = float(x[4])
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -33,8 +43,8 @@ class GANHyperparameterProblem(Problem):
 
         generator.dropout = torch.nn.Dropout(dropout)
 
-        optimizer_G = optim.Adam(generator.parameters(), lr=lr, betas=(0.5, 0.999))
-        optimizer_D = optim.Adam(discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
+        optimizer_G = optim.Adam(generator.parameters(), lr=lr, betas=(beta1, 0.999), weight_decay=weight_decay)
+        optimizer_D = optim.Adam(discriminator.parameters(), lr=lr, betas=(beta1, 0.999), weight_decay=weight_decay)
 
         total_d_loss = 0
         total_g_loss = 0
@@ -53,9 +63,27 @@ class GANHyperparameterProblem(Problem):
         self.last_f1 = f1
         self.last_auc = auc
         self.last_loss = avg_loss
-        self.last_ndcg=ndcg
+        self.last_ndcg = ndcg
 
         return -f1
+
+
+def _extract_gan_result(best_solution, best_score, problem, duration):
+    return {
+        "best_params": {
+            "hidden_channels": int(best_solution[0]),
+            "lr": best_solution[1],
+            "dropout": best_solution[2],
+            "weight_decay": best_solution[3],
+            "beta1": best_solution[4]
+        },
+        "f1": -best_score,
+        "auc": problem.last_auc,
+        "loss": problem.last_loss,
+        "ndcg": problem.last_ndcg,
+        "time_taken": duration
+    }
+
 
 def run_gan_ga():
     problem = GANHyperparameterProblem()
@@ -68,19 +96,10 @@ def run_gan_ga():
         individual_type=Individual
     )
 
+    start_time = time.time()
     best_solution, best_score = algo.run(task)
-
-    return {
-        "best_params": {
-            "hidden_channels": int(best_solution[0]),
-            "lr": best_solution[1],
-            "dropout": best_solution[2]
-        },
-        "f1": -best_score,
-        "auc": problem.last_auc,
-        "loss": problem.last_loss,
-        "ndcg": problem.last_ndcg
-    }
+    duration = time.time() - start_time
+    return _extract_gan_result(best_solution, best_score, problem, duration)
 
 
 def run_gan_pso():
@@ -94,19 +113,11 @@ def run_gan_pso():
         w=0.7
     )
 
+    start_time = time.time()
     best_solution, best_score = algo.run(task)
+    duration = time.time() - start_time
+    return _extract_gan_result(best_solution, best_score, problem, duration)
 
-    return {
-        "best_params": {
-            "hidden_channels": int(best_solution[0]),
-            "lr": best_solution[1],
-            "dropout": best_solution[2]
-        },
-        "f1": -best_score,
-        "auc": problem.last_auc,
-        "loss": problem.last_loss,
-        "ndcg": problem.last_ndcg
-    }
 
 def run_gan_abc():
     problem = GANHyperparameterProblem()
@@ -117,19 +128,10 @@ def run_gan_abc():
         limit=100
     )
 
+    start_time = time.time()
     best_solution, best_score = algo.run(task)
-
-    return {
-        "best_params": {
-            "hidden_channels": int(best_solution[0]),
-            "lr": best_solution[1],
-            "dropout": best_solution[2]
-        },
-        "f1": -best_score,
-        "auc": problem.last_auc,
-        "loss": problem.last_loss,
-        "ndcg": problem.last_ndcg
-    }
+    duration = time.time() - start_time
+    return _extract_gan_result(best_solution, best_score, problem, duration)
 
 
 def run_gan_sa():
@@ -142,19 +144,11 @@ def run_gan_sa():
         alpha=0.99
     )
 
+    start_time = time.time()
     best_solution, best_score = algo.run(task)
+    duration = time.time() - start_time
+    return _extract_gan_result(best_solution, best_score, problem, duration)
 
-    return {
-        "best_params": {
-            "hidden_channels": int(best_solution[0]),
-            "lr": best_solution[1],
-            "dropout": best_solution[2]
-        },
-        "f1": -best_score,
-        "auc": problem.last_auc,
-        "loss": problem.last_loss,
-        "ndcg": problem.last_ndcg
-    }
 
 def run_gan_hc():
     problem = GANHyperparameterProblem()
@@ -164,19 +158,11 @@ def run_gan_hc():
         delta=0.1
     )
 
+    start_time = time.time()
     best_solution, best_score = algo.run(task)
+    duration = time.time() - start_time
+    return _extract_gan_result(best_solution, best_score, problem, duration)
 
-    return {
-        "best_params": {
-            "hidden_channels": int(best_solution[0]),
-            "lr": best_solution[1],
-            "dropout": best_solution[2]
-        },
-        "f1": -best_score,
-        "auc": problem.last_auc,
-        "loss": problem.last_loss,
-        "ndcg": problem.last_ndcg
-    }
 
 def run_gan_ra():
     problem = GANHyperparameterProblem()
@@ -184,17 +170,7 @@ def run_gan_ra():
 
     algo = RandomSearch()
 
+    start_time = time.time()
     best_solution, best_score = algo.run(task)
-
-    return {
-        "best_params": {
-            "hidden_channels": int(best_solution[0]),
-            "lr": best_solution[1],
-            "dropout": best_solution[2]
-        },
-        "f1": -best_score,
-        "auc": problem.last_auc,
-        "loss": problem.last_loss,
-        "ndcg": problem.last_ndcg
-    }
-
+    duration = time.time() - start_time
+    return _extract_gan_result(best_solution, best_score, problem, duration)

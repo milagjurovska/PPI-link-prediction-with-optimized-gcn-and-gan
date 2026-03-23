@@ -5,6 +5,8 @@ import torch.optim as optim
 import numpy as np
 import torch.nn.functional as F
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 def decode(z, edge_label_index):
     src = z[edge_label_index[0]]
     dst = z[edge_label_index[1]]
@@ -29,21 +31,24 @@ class GCNLinkPredictor(torch.nn.Module):
         return self.layers[-1](x, edge_index)
 
 
-model = GCNLinkPredictor(in_channels=5, hidden_channels=256, num_layers=3)
+model = GCNLinkPredictor(in_channels=5, hidden_channels=256, num_layers=3).to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.01)
 
 
 def GCNtrain(model, optimizer, train_data):
     model.train()
-    z = model.encode(train_data.x, train_data.edge_index)
     optimizer.zero_grad()
 
-    edge_index = train_data.edge_label_index
-    edge_labels = train_data.edge_label
-    pos_mask = edge_labels == 1
+    x = train_data.x.to(device)
+    edge_index = train_data.edge_index.to(device)
+    edge_label_index = train_data.edge_label_index.to(device)
+    edge_label = train_data.edge_label.to(device)
 
-    pos_out = decode(z, edge_index[:, pos_mask])
-    neg_out = decode(z, edge_index[:, ~pos_mask])
+    z = model.encode(x, edge_index)
+    pos_mask = edge_label == 1
+
+    pos_out = decode(z, edge_label_index[:, pos_mask])
+    neg_out = decode(z, edge_label_index[:, ~pos_mask])
 
     eps = 1e-15
     pos_loss = -torch.log(torch.sigmoid(pos_out) + eps).mean()
@@ -59,8 +64,12 @@ def GCNtrain(model, optimizer, train_data):
 @torch.no_grad()
 def GCNtest(model, data):
     model.eval()
-    z = model.encode(data.x, data.edge_index)
-    scores = decode(z, data.edge_label_index)
+    x = data.x.to(device)
+    edge_index = data.edge_index.to(device)
+    edge_label_index = data.edge_label_index.to(device)
+    
+    z = model.encode(x, edge_index)
+    scores = decode(z, edge_label_index)
     probs = torch.sigmoid(scores)
     return probs.cpu().numpy()
 

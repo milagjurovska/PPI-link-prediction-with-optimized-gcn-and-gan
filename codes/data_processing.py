@@ -5,7 +5,13 @@ from torch_geometric.transforms import RandomLinkSplit
 from torch_geometric.utils import from_networkx
 from sklearn.preprocessing import LabelEncoder
 
-df = pd.read_csv("../PP-Pathways_ppi.csv/PP-Pathways_ppi.csv", sep=',', header=None, names=['source', 'target'])
+import os
+
+# Get the path relative to this script's location
+base_dir = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(base_dir, "..", "PP-Pathways_ppi.csv", "PP-Pathways_ppi.csv")
+
+df = pd.read_csv(data_path, sep=',', header=None, names=['source', 'target'])
 
 df.dropna(subset=['source', 'target'], inplace=True)
 

@@ -6,16 +6,23 @@ from gcn import *
 from gan import *
 from data_processing import train_data, test_data
 from niapy.algorithms.algorithm import Individual
+import time
+
+# Search space dimensions:
+#   x[0] = hidden_channels  in [32, 512]
+#   x[1] = lr               in [1e-5, 0.1]
+#   x[2] = num_layers       in [2, 6]
+#   x[3] = dropout          in [0.0, 0.8]
+#   x[4] = weight_decay     in [1e-7, 1e-2]
 
 class GCNHyperparameterProblem(Problem):
     def __init__(self):
         super().__init__(
-            dimension=4,
-            lower=[32, 0.0001, 2, 0.0],
-            upper=[256, 0.1, 4, 0.7],
+            dimension=5,
+            lower=[32,  1e-5, 2, 0.0, 1e-7],
+            upper=[512, 0.1,  6, 0.8, 1e-2],
             dtype=float
         )
-
         self.last_f1 = None
         self.last_auc = None
         self.last_loss = None
@@ -24,16 +31,17 @@ class GCNHyperparameterProblem(Problem):
     def _evaluate(self, x):
         hidden_channels = int(x[0])
         lr = float(x[1])
-        num_layers = int(x[2])
+        num_layers = max(2, int(round(x[2])))
         dropout = float(x[3])
+        weight_decay = float(x[4])
 
         model = GCNLinkPredictor(
             in_channels=5,
             hidden_channels=hidden_channels,
             num_layers=num_layers,
             dropout=dropout
-        )
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        ).to(device)
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
         total_loss = 0
         for epoch in range(10):
@@ -53,6 +61,23 @@ class GCNHyperparameterProblem(Problem):
         return -f1
 
 
+def _extract_gcn_result(best_solution, best_score, problem, duration):
+    return {
+        "best_params": {
+            "hidden_channels": int(best_solution[0]),
+            "lr": best_solution[1],
+            "num_layers": max(2, int(round(best_solution[2]))),
+            "dropout": best_solution[3],
+            "weight_decay": best_solution[4]
+        },
+        "f1": -best_score,
+        "auc": problem.last_auc,
+        "loss": problem.last_loss,
+        "ndcg": problem.last_ndcg,
+        "time_taken": duration
+    }
+
+
 def run_gcn_ga():
     problem = GCNHyperparameterProblem()
     task = Task(problem=problem, max_evals=30)
@@ -61,23 +86,14 @@ def run_gcn_ga():
         population_size=10,
         crossover_rate=0.8,
         mutation_rate=0.2,
-        individual_type = Individual
+        individual_type=Individual
     )
 
+    start_time = time.time()
     best_solution, best_score = algo.run(task)
+    duration = time.time() - start_time
+    return _extract_gcn_result(best_solution, best_score, problem, duration)
 
-    return {
-        "best_params": {
-            "hidden_channels": int(best_solution[0]),
-            "lr": best_solution[1],
-            "num_layers": int(best_solution[2]),
-            "dropout": best_solution[3]
-        },
-        "f1": -best_score,
-        "auc": problem.last_auc,
-        "loss": problem.last_loss,
-        "ndcg": problem.last_ndcg
-    }
 
 def run_gcn_pso():
     problem = GCNHyperparameterProblem()
@@ -90,20 +106,11 @@ def run_gcn_pso():
         w=0.7
     )
 
+    start_time = time.time()
     best_solution, best_score = algo.run(task)
+    duration = time.time() - start_time
+    return _extract_gcn_result(best_solution, best_score, problem, duration)
 
-    return {
-        "best_params": {
-            "hidden_channels": int(best_solution[0]),
-            "lr": best_solution[1],
-            "num_layers": int(best_solution[2]),
-            "dropout": best_solution[3]
-        },
-        "f1": -best_score,
-        "auc": problem.last_auc,
-        "loss": problem.last_loss,
-        "ndcg": problem.last_ndcg
-    }
 
 def run_gcn_abc():
     problem = GCNHyperparameterProblem()
@@ -114,20 +121,10 @@ def run_gcn_abc():
         limit=100
     )
 
+    start_time = time.time()
     best_solution, best_score = algo.run(task)
-
-    return {
-        "best_params": {
-            "hidden_channels": int(best_solution[0]),
-            "lr": best_solution[1],
-            "num_layers": int(best_solution[2]),
-            "dropout": best_solution[3]
-        },
-        "f1": -best_score,
-        "auc": problem.last_auc,
-        "loss": problem.last_loss,
-        "ndcg": problem.last_ndcg
-    }
+    duration = time.time() - start_time
+    return _extract_gcn_result(best_solution, best_score, problem, duration)
 
 
 def run_gcn_sa():
@@ -140,20 +137,11 @@ def run_gcn_sa():
         alpha=0.99
     )
 
+    start_time = time.time()
     best_solution, best_score = algo.run(task)
+    duration = time.time() - start_time
+    return _extract_gcn_result(best_solution, best_score, problem, duration)
 
-    return {
-        "best_params": {
-            "hidden_channels": int(best_solution[0]),
-            "lr": best_solution[1],
-            "num_layers": int(best_solution[2]),
-            "dropout": best_solution[3]
-        },
-        "f1": -best_score,
-        "auc": problem.last_auc,
-        "loss": problem.last_loss,
-        "ndcg": problem.last_ndcg
-    }
 
 def run_gcn_hc():
     problem = GCNHyperparameterProblem()
@@ -163,20 +151,11 @@ def run_gcn_hc():
         delta=0.1
     )
 
+    start_time = time.time()
     best_solution, best_score = algo.run(task)
+    duration = time.time() - start_time
+    return _extract_gcn_result(best_solution, best_score, problem, duration)
 
-    return {
-        "best_params": {
-            "hidden_channels": int(best_solution[0]),
-            "lr": best_solution[1],
-            "num_layers": int(best_solution[2]),
-            "dropout": best_solution[3]
-        },
-        "f1": -best_score,
-        "auc": problem.last_auc,
-        "loss": problem.last_loss,
-        "ndcg": problem.last_ndcg
-    }
 
 def run_gcn_ra():
     problem = GCNHyperparameterProblem()
@@ -184,18 +163,7 @@ def run_gcn_ra():
 
     algo = RandomSearch()
 
+    start_time = time.time()
     best_solution, best_score = algo.run(task)
-
-    return {
-        "best_params": {
-            "hidden_channels": int(best_solution[0]),
-            "lr": best_solution[1],
-            "num_layers": int(best_solution[2]),
-            "dropout": best_solution[3]
-        },
-        "f1": -best_score,
-        "auc": problem.last_auc,
-        "loss": problem.last_loss,
-        "ndcg": problem.last_ndcg
-    }
-
+    duration = time.time() - start_time
+    return _extract_gcn_result(best_solution, best_score, problem, duration)
