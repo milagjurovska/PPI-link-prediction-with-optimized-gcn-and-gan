@@ -329,5 +329,168 @@
         "loss": 17.0082950592041,
         "ndcg": 0.935773170230748,
         "time_taken": 32.568718910217285
+    },
+    {
+        "model_name": "GraphSAGE (None)",
+        "best_params": {
+            "hidden_channels": 32,
+            "lr": 0.1,
+            "num_layers": 5
+        },
+        "f1": 0.6788779558241614,
+        "auc": 0.6934465485028405,
+        "loss": 1.3968265056610107,
+        "ndcg": 0.9596702279926668,
+        "time_taken": 43.17539834976196
+    },
+    {
+        "best_params": {
+            "hidden_channels": 412,
+            "lr": 0.07512976888955616,
+            "num_layers": 3,
+            "dropout": 0.28549006098503915,
+            "weight_decay": 0.008221878661411691
+        },
+        "f1": 0.6928669276984974,
+        "auc": 0.746530697488209,
+        "loss": 1.5185986399650573,
+        "ndcg": 0.9690056907925042,
+        "time_taken": 848.9448978900909,
+        "model_name": "GraphSAGE (GA)"
+    },
+    {
+        "best_params": {
+            "hidden_channels": 37,
+            "lr": 0.004996756837453783,
+            "num_layers": 3,
+            "dropout": 0.3080770939088,
+            "weight_decay": 0.004174903723981006
+        },
+        "f1": 0.7209934031819946,
+        "auc": 0.7359275382486904,
+        "loss": 1.586045467853546,
+        "ndcg": 0.9675548511380788,
+        "time_taken": 607.2616767883301,
+        "model_name": "GraphSAGE (ABC)"
+    },
+    {
+        "best_params": {
+            "hidden_channels": 352,
+            "lr": 1.9306977288832496e-05,
+            "num_layers": 4,
+            "dropout": 0.0,
+            "weight_decay": 1.6681e-05
+        },
+        "f1": 0.756616176797313,
+        "auc": 0.7888623672765467,
+        "loss": 1.6000171184539795,
+        "ndcg": 0.9739209281970387,
+        "time_taken": 666.2786858081818,
+        "model_name": "GraphSAGE (ACO)"
+    },
+    {
+        "best_params": {
+            "hidden_channels": 206,
+            "lr": 1e-05,
+            "num_layers": 3,
+            "dropout": 0.47285106608448185,
+            "weight_decay": 0.003142057237123206
+        },
+        "f1": 0.7443717030896759,
+        "auc": 0.7658030060487303,
+        "loss": 1.3646667718887329,
+        "ndcg": 0.9725896590680043,
+        "time_taken": 537.4296493530273,
+        "model_name": "GraphSAGE (HC)"
+    },
+    {
+        "best_params": {
+            "hidden_channels": 416,
+            "lr": 0.0006210169418915617,
+            "num_layers": 4,
+            "dropout": 0.25263157894736843,
+            "weight_decay": 0.0012328467394420659
+        },
+        "f1": 0.7854822001891612,
+        "auc": 0.8143335290967897,
+        "loss": 1.3826466083526612,
+        "ndcg": 0.9769291948188867,
+        "time_taken": 696.2628884315491,
+        "model_name": "GraphSAGE (BO)"
+    },
+    {
+        "best_params": {
+            "hidden_channels": 196,
+            "lr": 0.00012627753301617907,
+            "num_layers": 5,
+            "dropout": 0.2126691599163052,
+            "weight_decay": 8.539179735822079e-05
+        },
+        "f1": 0.7758698085313958,
+        "auc": 0.8156336561898129,
+        "loss": 1.5106685996055602,
+        "ndcg": 0.9776041899774771,
+        "time_taken": 833.48024725914,
+        "model_name": "GraphSAGE (Optuna)"
+    },
+    {
+        "best_params": {
+            "hidden_channels": 256,
+            "lr": 0.0001,
+            "num_layers": 5,
+            "dropout": 0.3,
+            "weight_decay": 0.001
+        },
+        "f1": 0.7808405700626343,
+        "auc": 0.8106683778424834,
+        "loss": 1.4892881989479065,
+        "ndcg": 0.9766295601547658,
+        "time_taken": 22907.368953704834,
+        "model_name": "GraphSAGE (GS)"
+    },
+    {
+        "best_params": {
+            "hidden_channels": 507,
+            "lr": 0.04561515664256938,
+            "num_layers": 4,
+            "dropout": 0.3048058826191993,
+            "weight_decay": 0.004496060278540347
+        },
+        "f1": 0.710140783476023,
+        "auc": 0.7014448386139589,
+        "loss": 1.582217288017273,
+        "ndcg": 0.9452379530157764,
+        "time_taken": 2052.0096175670624,
+        "model_name": "GraphSAGE (PSO)"
+    },
+    {
+        "best_params": {
+            "hidden_channels": 358,
+            "lr": 1e-05,
+            "num_layers": 5,
+            "dropout": 0.10420998870078363,
+            "weight_decay": 1e-07
+        },
+        "f1": 0.70883456114931739,
+        "auc": 0.8219565466771699,
+        "loss": 1.390789008140564,
+        "ndcg": 0.9785221375728245,
+        "time_taken": 2766.1606941223145,
+        "model_name": "GraphSAGE (SA)"
+    },
+    {
+        "best_params": {
+            "hidden_channels": 67,
+            "lr": 0.0008829833911331399,
+            "num_layers": 5,
+            "dropout": 0.7318020369178408,
+            "weight_decay": 0.00895930498535569
+        },
+        "f1": 0.6953623592172401,
+        "auc": 0.7645362962533827,
+        "loss": 1.6141597986221314,
+        "ndcg": 0.9548606596885677,
+        "time_taken": 1851.182900428772,
+        "model_name": "GraphSAGE (RS)"
     }
 ]

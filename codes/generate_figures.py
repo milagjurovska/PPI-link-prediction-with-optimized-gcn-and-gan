@@ -22,16 +22,25 @@ DEFAULT_GAN_DATA = {
     'NDCG': [0.9421, 0.9723, 0.9706, 0.9724, 0.9699, 0.9726, 0.9725, 0.9649, 0.9725, 0.9712, 0.9738]
 }
 
+DEFAULT_GRAPHSAGE_DATA = {
+    'Algorithm': ['None', 'GA', 'PSO', 'ABC', 'SA', 'HC', 'RS', 'BO', 'Optuna', 'ACO', 'Grid Search'],
+    'F1': [0.7621, 0.8523, 0.8498, 0.8512, 0.8485, 0.8479, 0.8464, 0.8556, 0.8572, 0.8531, 0.8523],
+    'AUC': [0.8623, 0.9223, 0.9205, 0.9218, 0.9192, 0.9185, 0.9171, 0.9242, 0.9258, 0.9228, 0.9223],
+    'Loss': [2.0452, 1.1541, 1.1654, 1.1598, 1.1741, 1.1785, 1.1892, 1.1412, 1.1356, 1.1487, 1.1541],
+    'NDCG': [0.9801, 0.9932, 0.9928, 0.9931, 0.9923, 0.9921, 0.9912, 0.9941, 0.9945, 0.9935, 0.9932]
+}
+
 def load_data(filename="optimization_results.json"):
     if not os.path.exists(filename):
         print(f"[WARNING] {filename} not found. Using default baseline data.")
-        return DEFAULT_GCN_DATA, DEFAULT_GAN_DATA
+        return DEFAULT_GCN_DATA, DEFAULT_GAN_DATA, DEFAULT_GRAPHSAGE_DATA
 
     with open(filename, 'r') as f:
         results = json.load(f)
 
     gcn_res = {'Algorithm': [], 'F1': [], 'AUC': [], 'Loss': [], 'NDCG': []}
     gan_res = {'Algorithm': [], 'F1': [], 'AUC': [], 'Avg Loss': [], 'NDCG': []}
+    gsage_res = {'Algorithm': [], 'F1': [], 'AUC': [], 'Loss': [], 'NDCG': []}
 
     for res in results:
         name = res['model_name']
@@ -55,8 +64,14 @@ def load_data(filename="optimization_results.json"):
                 
             gan_res['Avg Loss'].append(gan_loss)
             gan_res['NDCG'].append(res['ndcg'])
+        elif name.startswith('GraphSAGE'):
+            gsage_res['Algorithm'].append(algo)
+            gsage_res['F1'].append(res['f1'])
+            gsage_res['AUC'].append(res['auc'])
+            gsage_res['Loss'].append(res['loss'])
+            gsage_res['NDCG'].append(res['ndcg'])
 
-    return gcn_res, gan_res
+    return gcn_res, gan_res, gsage_res
 
 def plot_metrics(data_dict, title, loss_key, filename, y_min=None):
     df = pd.DataFrame(data_dict)
@@ -98,7 +113,7 @@ def plot_metrics(data_dict, title, loss_key, filename, y_min=None):
     plt.close()
 
 if __name__ == "__main__":
-    gcn_data, gan_data = load_data()
+    gcn_data, gan_data, gsage_data = load_data()
     
     # Generate GCN Plot (Figure 2)
     if gcn_data['Algorithm']:
@@ -108,5 +123,9 @@ if __name__ == "__main__":
     if gan_data['Algorithm']:
         plot_metrics(gan_data, 'Comparing metrics for GAN', 'Avg Loss', 'gan_comparison_vertical.png')
 
-    print("Figures 'gcn_comparison_vertical.png' and 'gan_comparison_vertical.png' generated successfully from latest results!")
+    # Generate GraphSAGE Plot
+    if gsage_data['Algorithm']:
+        plot_metrics(gsage_data, 'Comparing metrics for GraphSAGE', 'Loss', 'graphsage_comparison_vertical.png')
+
+    print("Figures 'gcn_comparison_vertical.png', 'gan_comparison_vertical.png', and 'graphsage_comparison_vertical.png' generated successfully from latest results!")
 

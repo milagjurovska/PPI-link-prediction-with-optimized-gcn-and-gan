@@ -4,6 +4,8 @@ from optimizers_niapy_gcn import *
 from other_optimizers_gcn import *
 from other_optimizers_gan import *
 from optimizers_niapy_gan import *
+from optimizers_niapy_graphsage import *
+from other_optimizers_graphsage import *
 
 import json
 import os
@@ -130,6 +132,37 @@ def gan_none():
     save_all_results()
     print(f"Epoch {epoch + 1}, Average Loss: {(d_loss - g_loss):.4f}, AUC score: {auc_gan:.4f}, f1 score: {f1_gan:.4f}, NDCG: {ndcg:.4f}, Time: {duration:.2f}s")
 
+def graphsage_none():
+    if any(res['model_name'] == "GraphSAGE (None)" for res in all_results):
+        print("\nSkipping GraphSAGE (None) - already exists.")
+        return
+    print("\nNo optimizing (GraphSAGE)")
+    start_time = time.time()
+    # Built similarly to GCN baseline
+    model = GraphSAGELinkPredictor(in_channels=5, hidden_channels=32, num_layers=5).to(device)
+    optimizer = optim.Adam(model.parameters(), lr=0.1)
+
+    epoch, loss, auc_val, f1_val, ndcg_val = 0,0,0,0,0
+    for _ in range(10):
+      loss = GraphSAGEtrain(model, optimizer, train_data)
+      test_probs = GraphSAGEtest(model, test_data)
+      auc_val, f1_val, ndcg_val = evaluate_model(test_probs, test_data.edge_label)
+      epoch=_
+    
+    duration = time.time() - start_time
+    result = {
+        "model_name": "GraphSAGE (None)",
+        "best_params": {"hidden_channels": 32, "lr": 0.1, "num_layers": 5},
+        "f1": f1_val,
+        "auc": auc_val,
+        "loss": loss,
+        "ndcg": ndcg_val,
+        "time_taken": duration
+    }
+    all_results.append(result)
+    save_all_results()
+    print(f"Epoch {epoch+1}, Loss: {loss:.4f}, AUC score: {auc_val:.4f}, f1 score: {f1_val:.4f}, NDCG: {ndcg_val:.4f}, Time: {duration:.2f}s")
+
 def gcn_ga():
     print_result(run_gcn_ga(), "GCN (GA)")
 
@@ -190,6 +223,17 @@ def gcn_gs():
 def gan_gs():
     print_result(run_gan_gs(train_data, test_data), "GAN (GS)")
 
+def graphsage_ga(): return print_result(run_graphsage_ga(), "GraphSAGE (GA)")
+def graphsage_pso(): return print_result(run_graphsage_pso(), "GraphSAGE (PSO)")
+def graphsage_abc(): return print_result(run_graphsage_abc(), "GraphSAGE (ABC)")
+def graphsage_sa(): return print_result(run_graphsage_sa(), "GraphSAGE (SA)")
+def graphsage_hc(): return print_result(run_graphsage_hc(), "GraphSAGE (HC)")
+def graphsage_rs(): return print_result(run_graphsage_ra(), "GraphSAGE (RS)")
+def graphsage_bo(): return print_result(run_graphsage_bo(train_data, test_data), "GraphSAGE (BO)")
+def graphsage_optuna(): return print_result(run_graphsage_optuna(train_data, test_data), "GraphSAGE (Optuna)")
+def graphsage_aco(): return print_result(run_graphsage_aco(train_data, test_data), "GraphSAGE (ACO)")
+def graphsage_gs(): return print_result(run_graphsage_gs(train_data, test_data), "GraphSAGE (GS)")
+
 def run_step(func, name):
     if any(res['model_name'] == name for res in all_results):
         print(f"\nSkipping {name} - already exists.")
@@ -221,6 +265,18 @@ if __name__ == "__main__":
         run_step(gan_optuna, "GAN (Optuna)")
         run_step(gcn_gs, "GCN (GS)")
         run_step(gan_gs, "GAN (GS)")
+        
+        run_step(graphsage_none, "GraphSAGE (None)")
+        run_step(graphsage_ga, "GraphSAGE (GA)")
+        run_step(graphsage_pso, "GraphSAGE (PSO)")
+        run_step(graphsage_sa, "GraphSAGE (SA)")
+        run_step(graphsage_abc, "GraphSAGE (ABC)")
+        run_step(graphsage_aco, "GraphSAGE (ACO)")
+        run_step(graphsage_hc, "GraphSAGE (HC)")
+        run_step(graphsage_rs, "GraphSAGE (RS)")
+        run_step(graphsage_bo, "GraphSAGE (BO)")
+        run_step(graphsage_optuna, "GraphSAGE (Optuna)")
+        run_step(graphsage_gs, "GraphSAGE (GS)")
     except KeyboardInterrupt:
         print("\n[STOP] Interrupted by user.")
     finally:
