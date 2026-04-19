@@ -1,8 +1,8 @@
-# Hyperparameter tuning using bio-inspired algorithms in GCN and GAN models for link prediction in a PPI network 
+# Hyperparameter tuning using bio-inspired algorithms in GCN, GAN and GraphSAGE models for link prediction in a PPI network 
 
 ## Overview
 
-This project is made to compare different biologically inspired algorithms like Genetic Algorithm, Particle Swarm Optimization, Ant Colony Optimization, Artificial Bee Colony and classic ones like Grid Search, Simulated Annealing, Hill Climbing and Random Search as well as Optuma and Bayesian Optimization in hyperparameter optimization in Graph Convolutional Network and Generative Adversarial Network models for link prediction in a SNAPS protein-protein interaction network. 
+This project is made to compare different biologically inspired algorithms like Genetic Algorithm, Particle Swarm Optimization, Ant Colony Optimization, Artificial Bee Colony and classic ones like Grid Search, Simulated Annealing, Hill Climbing and Random Search as well as Optuma and Bayesian Optimization in hyperparameter optimization in Graph Convolutional Network, Generative Adversarial Network and GraphSAGE models for link prediction in a SNAPS protein-protein interaction network. 
 
 ## 🧬 Protein-Protein Interaction Network: PP-Pathways
 This repository explores the <a href="https://snap.stanford.edu/biodata/datasets/10000/10000-PP-Pathways.html">PP-Pathways dataset from the Stanford SNAP BioData collection</a>. It represents a large-scale protein-protein interaction (PPI) network derived from pathway databases.
